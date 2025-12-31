@@ -2,61 +2,129 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Yajra\DataTables\DataTables;
 
 class ProductController extends Controller
 {
-    public function index()
+
+    public function index(Request $request)
     {
-        return view('product.index');
+        dd($request->toArray());
+        if ($request->ajax()) {
+            $products = Product::with('category');
+
+            if ($request->category) {
+                $products->where('category_id', $request->category_id);
+            }
+
+            if ($request->status) {
+                $products->where('status', $request->status);
+            }
+
+            return DataTables::of($products)
+                ->addIndexColumn()
+                ->addColumn('image', function ($row) {
+                    $data = $row->images->first()->image ?? 'no-image.png';
+                    return asset('product/' . $data);
+                })
+                ->addColumn('category', function ($row) {
+                    return $row->category->name ?? '-';
+                })
+                ->addColumn('status', function ($row) {
+                    return $row->status
+                        ? '<span class="badge bg-success">Active</span>'
+                        : '<span class="badge bg-danger">Inactive</span>';
+                })
+                ->addColumn('action', function ($row) {
+                    return '<div class="d-flex justify-content-center">
+                    <a href="' . route('product.show', $row->id) . '" class="menu-link"><i class="menu-icon tf-icons bx bx-show"></i></a>
+                    <a href="' . route('product.edit', $row->id) . '" class="menu-link"><i class="menu-icon tf-icons bx bx-edit"></i></a>
+                    <a href="javascript:void(0)" data-id="' . $row->id . '" class="menu-link delete"><i class="menu-icon text-danger tf-icons bx bx-trash"></i></a>
+                </div>';
+                })
+                ->rawColumns(['status', 'action'])
+                ->make(true);
+        }
+        $categories = Category::select('id', 'name')->get();
+
+        return view('product.index', compact('categories'));
     }
 
-    public function create(){
-        return view('product.create');
+    public function slug(Request $request)
+    {
+        $slug = Product::where('slug', $request->slug)->first();
+        if ($slug) {
+            return response()->json(['status' => 'error', 'message' => 'Slug already exists'], 422);
+        }
+        return response()->json(['status' => 'success', 'message' => 'Slug is available'], 200);
     }
 
-    public function store(Request $request){
-        dd($request->all());
-        $validator = Validator::make($request->all(),[
+    public function create()
+    {
+        $categories = Category::all();
+        return view('product.create', compact('categories'));
+    }
+
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255|unique:products,slug',
             'description' => 'required|string|max:255',
-            'price' => 'required|numeric',
-            'stock' => 'required|numeric',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
             'status' => 'required|boolean',
-            'category_id' => 'required|exists:categories,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'category' => 'required|exists:categories,id',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => $validator->errors()], 401);
-        }
-        $product = Product::create([
-            'name' => $request->name,
-            'slug' => $request->slug,
-            'description' => $request->description,
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'status' => $request->status,
-            'category_id' => $request->category_id,
-        ]);
-        foreach ($request->image as $key => $value) {
 
-            if ($request->hasFile('image')) {
-                $file = $request->file('image');
-                $filename = time(). '.' . $file->getClientOriginalExtension();
-                $file->move(public_path('product'), $filename);
-                $product->image = $filename;
-                $product->save();
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => $validator->errors()], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $product = Product::create([
+                'name' => $request->name,
+                'slug' => $request->slug,
+                'description' => $request->description,
+                'price' => $request->price,
+                'stock' => $request->stock,
+                'status' => $request->status,
+                'category_id' => $request->category,
+            ]);
+
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+
+                    $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                    $image->move(public_path('product'), $filename);
+                    $product->images()->create([
+                        'image' => $filename
+                    ]);
+                }
             }
 
-        }
+            DB::commit();
+            return response()->json(['status' => 'success', 'message' => 'Product created successfully'], 201);
 
-        return response()->json(['status' => 'success', 'message' => 'Product created successfully'], 200);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+            return response()->json(['status' => 'error', 'message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
+        }
     }
 
-    public function show($id){
+    public function show($id)
+    {
         $product = Product::find($id);
         if (!$product) {
             return response()->json(['errors' => 'Product not found.', 'status' => 'errors']);
@@ -64,27 +132,30 @@ class ProductController extends Controller
         return view('product.show', compact('product'));
     }
 
-    public function edit($id){
-        $product = Product::find($id);
+    public function edit($id)
+    {
+        $product = Product::find($id)->with('images', 'category')->first();
         if (!$product) {
             return response()->json(['errors' => 'Product not found.', 'status' => 'errors']);
         }
-        return view('product.edit', compact('product'));
+        $categories = Category::all();
+        return view('product.update', compact('product', 'categories'));
     }
 
-    public function update(Request $request){
-        $validator = Validator::make($request->all(),[
+    public function update(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:products,slug',
+            'slug' => 'required|string|max:255',
             'description' => 'required|string|max:255',
             'price' => 'required|numeric',
             'stock' => 'required|numeric',
             'status' => 'required|boolean',
-            'category_id' => 'required|exists:categories,id',
+            'category' => 'required|exists:categories,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
         if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => $validator->errors()], 401);
+            return response()->json(['status' => 'error', 'message' => $validator->errors()], 422);
         }
 
         $product = Product::find($request->id);
@@ -93,36 +164,53 @@ class ProductController extends Controller
             return response()->json(['errors' => 'Product not found.', 'status' => 'errors']);
         }
 
-        Product::where('id', $request->id)->update([
-            'name' => $request->name,
-            'slug' => $request->slug,
-            'description' => $request->description,
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'status' => $request->status,
-            'category_id' => $request->category_id,
-        ]);
+        DB::beginTransaction();
 
-        if ($request->hasFile('image')) {
-            if (file_exists(public_path('product/' . $product->image))) {
-                unlink(public_path('product/' . $product->image));
+        try {
+            $product = Product::where('id', $request->id)->update([
+                'name' => $request->name,
+                'slug' => $request->slug,
+                'description' => $request->description,
+                'price' => $request->price,
+                'stock' => $request->stock,
+                'status' => $request->status,
+                'category_id' => $request->category,
+            ]);
+
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+
+                    $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                    $image->move(public_path('product'), $filename);
+                    $product->images()->update([
+                        'image' => $filename
+                    ]);
+                }
             }
-            $file = $request->file('image');
-            $filename = time(). '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('product'), $filename);
-            $product->images()->create(['image' => $filename]);
+
+            DB::commit();
+            return response()->json(['status' => 'success', 'message' => 'Product updated successfully'], 201);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+            return response()->json(['status' => 'error', 'message' => 'Something went wrong', 'error' => $e->getMessage()], 500);
         }
 
-        return response()->json(['status' => 'success', 'message' => 'Product created successfully'], 200);
     }
 
-    public function delete($id){
+    public function delete($id)
+    {
         $product = Product::find($id);
         if (!$product) {
             return response()->json(['errors' => 'Product not found.', 'status' => 'errors']);
         }
-        if (file_exists(public_path('product/' . $product->image))) {
-            unlink(public_path('product/' . $product->image));
+        $images = $product->images;
+        foreach ($images as $image) {
+            if (file_exists(public_path('product/' . $image->image))) {
+                unlink(public_path('product/' . $image->image));
+            }
+            $image->delete();
         }
         $product->delete();
         return response()->json(['status' => 'success', 'message' => 'Product deleted successfully'], 200);
