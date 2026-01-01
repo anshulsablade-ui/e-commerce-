@@ -10,7 +10,10 @@
         <div class="col-md-12 mb-4">
             <div class="card">
                 <div class="card-header border-bottom">
-                    <h5 class="card-title">Filter</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title">Filter</h5>
+                        <a href="{{ route('product.create') }}" class="text-white btn btn-primary"><i class="tf-icons bx bx-plus"></i> Add Product</a>
+                    </div>
                     <div class="d-flex justify-content-between align-items-center row pt-4 gap-6 gap-md-0 g-md-6">
                         <div class="col-md-4 product_status">
                             <select id="filterStatus" class="form-select text-capitalize">
@@ -29,8 +32,8 @@
                         <div class="col-md-4 product_stock">
                             <select id="filterStock" class="form-select text-capitalize">
                                 <option value="">Stock</option>
-                                <option value="Out_of_Stock">Out_of_Stock</option>
-                                <option value="In_Stock">In_Stock</option>
+                                <option value="out_of_stock">Out_of_Stock</option>
+                                <option value="in_stock">In_Stock</option>
                             </select></div>
                     </div>
                 </div>
@@ -70,15 +73,16 @@
                 }
             });
 
-
-             let table = $('.data-table').DataTable({
+            let table = $('.data-table').DataTable({
                 processing: true,
                 serverSide: true,
+                responsive: true,
                 ajax: {
                     url: "{{ route('product.index') }}",
                     data: function (d) {
-                        d.category_id = $('#filterCategory').val();
                         d.status = $('#filterStatus').val();
+                        d.category_id = $('#filterCategory').val();
+                        d.stock = $('#filterStock').val();
                     }
                 },
                 columns: [

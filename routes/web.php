@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Models\Product;
@@ -32,4 +33,10 @@ Route::middleware('login')->group(function () {
     Route::delete('/product/{id}', [ProductController::class, 'delete'])->name('product.delete');
 
     Route::post('/slug', [ProductController::class, 'slug'])->name('slug');
+
+    Route::get('/category/index', [CategoryController::class, 'index'])->name('category.index');
+    Route::post('/category/store', [CategoryController::class, 'store'])->name('category.store');
+    Route::get('/category/edit/{id}', [CategoryController::class, 'edit'])->name('category.edit');
+    Route::put('/category/{id}', [CategoryController::class, 'update'])->name('category.update');
+    Route::delete('/category/{id}', [CategoryController::class, 'delete'])->name('category.delete');
 });

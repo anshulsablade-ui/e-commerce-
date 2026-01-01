@@ -32,11 +32,11 @@
                         
                         <div class="mb-3">
                             <label for="name" class="form-label">Product Name</label>
-                            <input type="text" class="form-control" id="name" name="name" placeholder="name@example.com" />
+                            <input type="text" class="form-control" id="name" name="name"/>
                         </div>
                         <div class="mb-3">
                             <label for="slug" class="form-label">Product Slug</label>
-                            <input class="form-control" type="text" id="slug" name="slug" placeholder="Slug here..." />
+                            <input class="form-control" type="text" id="slug" name="slug" />
                         </div>
                         <div class="mb-3">
                             <label for="description" class="form-label">description</label>
@@ -46,7 +46,7 @@
 
                         <div class="mb-3">
                             <label for="images" class="form-label">Images</label>
-                            <input class="form-control" type="file" id="images" name="images[]" placeholder="" multiple />
+                            <input class="form-control" type="file" id="images" name="images[]" multiple />
                         </div>
                         <div class="row mb-3">
                             <div class="col">
@@ -88,7 +88,6 @@
 
 @section('script')
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
     <script>
         $(document).ready(function () {
             $.ajaxSetup({

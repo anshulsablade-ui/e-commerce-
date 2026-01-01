@@ -16,7 +16,10 @@ return new class extends Migration {
             $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
 
             $table->string('order_number')->unique();
-            $table->decimal('total_amount', 10, 2);
+            $table->decimal('subtotal', 10, 2);
+            $table->decimal('discount', 10, 2);
+            $table->decimal('total', 10, 2);
+            
             $table->enum('status', ['pending', 'processing', 'completed', 'cancelled'])->default('pending');
 
 

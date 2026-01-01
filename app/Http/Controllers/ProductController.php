@@ -15,7 +15,6 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
-        dd($request->toArray());
         if ($request->ajax()) {
             $products = Product::with('category');
 
@@ -25,6 +24,13 @@ class ProductController extends Controller
 
             if ($request->status) {
                 $products->where('status', $request->status);
+            }
+
+            if ($request->stock == 'out_of_stock') {
+                $products->where('stock', '=', 0);
+            }
+            if ($request->stock == 'in_stock') {
+                $products->where('stock', '>', 0);
             }
 
             return DataTables::of($products)
@@ -134,7 +140,8 @@ class ProductController extends Controller
 
     public function edit($id)
     {
-        $product = Product::find($id)->with('images', 'category')->first();
+        $product = Product::with(['images', 'category'])->find($id);
+        
         if (!$product) {
             return response()->json(['errors' => 'Product not found.', 'status' => 'errors']);
         }
@@ -178,11 +185,24 @@ class ProductController extends Controller
             ]);
 
             if ($request->hasFile('images')) {
+                $product = Product::with('images')->find($request->id);
+
+                // delete old images
+                if ($product->images) {
+                    foreach ($product->images as $image) {
+                        if (file_exists(public_path('product/' . $image->image))) {
+                            unlink(public_path('product/' . $image->image));
+                        }
+                        $image->delete();
+                    }
+                }
+
+                // insert new images
                 foreach ($request->file('images') as $image) {
 
                     $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
                     $image->move(public_path('product'), $filename);
-                    $product->images()->update([
+                    $product->images()->create([
                         'image' => $filename
                     ]);
                 }

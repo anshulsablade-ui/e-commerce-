@@ -60,14 +60,37 @@
         <li class="menu-item @if (request()->routeIs('dashboard')) active @endif">
             <a href="{{ route('dashboard') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
-                <div data-i18n="Analytics">Dashboard</div>
+                <div>Dashboard</div>
             </a>
         </li>
-        <li class="menu-item @if (request()->routeIs('product.index')) active @endif">
+        {{-- <li class="menu-item @if (request()->routeIs('product.index')) active @endif">
             <a href="{{ route('product.index') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
-                <div data-i18n="Analytics">Product</div>
+                <div>Product</div>
             </a>
+        </li> --}}
+
+
+        <li class="menu-item  @if (request()->segment(1) == 'product' || request()->segment(1) == 'category') active open @endif">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons bx bx-dock-top"></i>
+                <div data-i18n="Account Settings">Products</div>
+            </a>
+            <ul class="menu-sub">
+
+                <li class="menu-item  @if (request()->routeIs('product.index')) active @endif">
+                    <a href="{{ route('product.index') }}"
+                        class="menu-link">
+                        <div data-i18n="Account">Product List</div>
+                    </a>
+                </li>
+                <li class="menu-item  @if (request()->routeIs('category.index')) active @endif">
+                    <a href="{{ route('category.index') }}" class="menu-link">
+                        <div data-i18n="Notifications">Category List</div>
+                    </a>
+                </li>
+
+            </ul>
         </li>
 
     </ul>
