@@ -9,7 +9,7 @@
     <div class="row">
         <div class="col-md-12 mb-4">
             <div class="card">
-                <div class="card-header border-bottom">
+                <div class="card-header pb-0">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title">Category List</h5>
                         <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas"
@@ -21,12 +21,12 @@
                 </div>
 
                 <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasEnd" aria-labelledby="offcanvasEndLabel">
-                    <div class="offcanvas-header">
+                    <div class="offcanvas-header border-bottom">
                         <h5 id="offcanvasEndLabel" class="offcanvas-title">Add Category</h5>
                         <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"
                             aria-label="Close"></button>
                     </div>
-                    <div class="offcanvas-body my-auto mx-0 flex-grow-0">
+                    <div class="offcanvas-body mx-0 flex-grow-0">
                         <form id="categoryForm">
                             <input type="hidden" id="category_id" name="category_id">
 
@@ -46,7 +46,7 @@
                     </div>
                 </div>
 
-                <div class="card-body table-responsive mb-4 mt-2">
+                <div class="card-body table-responsive mb-4">
                     <table class="table table-striped data-table w-100">
                         <thead>
                             <tr>
@@ -164,14 +164,11 @@
                         $.each(errors, function(key, value) {
                             $('#' + key)
                                 .addClass('is-invalid')
-                                .after(
-                                    `<div class="invalid-feedback">${value[0]}</div>`);
+                                .after(`<div class="invalid-feedback">${value[0]}</div>`);
                         });
                     }
                 });
             });
-
-
 
             $('#offcanvasEnd').on('hidden.bs.offcanvas', function() {
                 $('#categoryForm')[0].reset();

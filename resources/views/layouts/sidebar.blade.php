@@ -63,17 +63,23 @@
                 <div>Dashboard</div>
             </a>
         </li>
-        {{-- <li class="menu-item @if (request()->routeIs('product.index')) active @endif">
-            <a href="{{ route('product.index') }}" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-home-circle"></i>
-                <div>Product</div>
+        <li class="menu-item @if (request()->routeIs('customer.index')) active @endif">
+            <a href="{{ route('customer.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-user"></i>
+                <div>Customer list</div>
             </a>
-        </li> --}}
+        </li>
+        <li class="menu-item @if (request()->routeIs('order.index')) active @endif">
+            <a href="{{ route('order.index') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-cart"></i>
+                <div>Order list</div>
+            </a>
+        </li>
 
 
         <li class="menu-item  @if (request()->segment(1) == 'product' || request()->segment(1) == 'category') active open @endif">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-dock-top"></i>
+                <i class="menu-icon tf-icons bx bx-layout"></i>
                 <div data-i18n="Account Settings">Products</div>
             </a>
             <ul class="menu-sub">

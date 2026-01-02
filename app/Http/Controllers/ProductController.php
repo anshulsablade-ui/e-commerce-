@@ -18,16 +18,17 @@ class ProductController extends Controller
         if ($request->ajax()) {
             $products = Product::with('category');
 
-            if ($request->category) {
+            if ($request->category_id) {
                 $products->where('category_id', $request->category_id);
             }
 
-            if ($request->status) {
+            if (!is_null($request->status)) {
                 $products->where('status', $request->status);
             }
 
+
             if ($request->stock == 'out_of_stock') {
-                $products->where('stock', '=', 0);
+                $products->where('stock', 0);
             }
             if ($request->stock == 'in_stock') {
                 $products->where('stock', '>', 0);
@@ -35,12 +36,15 @@ class ProductController extends Controller
 
             return DataTables::of($products)
                 ->addIndexColumn()
+                ->addColumn('price', function ($row) {
+                    return '₹' . $row->price ?? 'N/A';
+                })
                 ->addColumn('image', function ($row) {
                     $data = $row->images->first()->image ?? 'no-image.png';
                     return asset('product/' . $data);
                 })
                 ->addColumn('category', function ($row) {
-                    return $row->category->name ?? '-';
+                    return $row->category->name ?? 'N/A';
                 })
                 ->addColumn('status', function ($row) {
                     return $row->status
@@ -141,7 +145,7 @@ class ProductController extends Controller
     public function edit($id)
     {
         $product = Product::with(['images', 'category'])->find($id);
-        
+
         if (!$product) {
             return response()->json(['errors' => 'Product not found.', 'status' => 'errors']);
         }

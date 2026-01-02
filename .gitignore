@@ -17,6 +17,8 @@
 /public/hot
 /public/storage
 /public/product
+/public/default
+/public/customer
 /storage/*.key
 /storage/pail
 /vendor

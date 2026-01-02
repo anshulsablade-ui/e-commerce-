@@ -58,7 +58,7 @@ class AuthController extends Controller
         if (Auth::check()) {
             return redirect()->route('dashboard');
         }
-        // dd($request->all(), $request->header());
+        
         $validator = Validator::make($request->all(),[
             'username' => 'required|string|max:255',
             'email' => 'required|string|email|unique:users,email',
@@ -68,7 +68,7 @@ class AuthController extends Controller
             return response()->json(['status' => 'error', 'message' => $validator->errors()], 401);
         }
         $user = User::create([
-            'username' => $request->username,
+            'name' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password)
         ]);
