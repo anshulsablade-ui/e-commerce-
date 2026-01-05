@@ -83,6 +83,7 @@ class CustomerController extends Controller
             $customer->update(['image' => $filename]);
         }
 
+        session()->flash('success', 'Customer created successfully');
         return response()->json(['status' => 'success', 'message' => 'Customer created successfully']);
     }
 
@@ -139,6 +140,7 @@ class CustomerController extends Controller
             $customer->update(['image' => $filename]);
         }
 
+        session()->flash('success', 'Customer updated successfully');
         return response()->json(['status' => 'success', 'message' => 'Customer created successfully']);
     }
 
@@ -152,6 +154,17 @@ class CustomerController extends Controller
             unlink(public_path('customer/' . $customer->image));
         }
         $customer->delete();
+
+        session()->flash('success', 'Customer deleted successfully');
         return response()->json(['status' => 'success', 'message' => 'Customer deleted successfully'], 200);
+    }
+
+    public function ajaxCustomer(Request $request)
+    {
+        $customers = Customer::where('name', 'like', '%' . $request->search . '%')
+            ->select('id', 'name', 'email')
+            ->limit(20)
+            ->get();
+        return response()->json($customers);
     }
 }

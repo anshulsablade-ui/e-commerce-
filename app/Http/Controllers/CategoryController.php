@@ -43,6 +43,8 @@ class CategoryController extends Controller
             'name' => $request->name,
             'slug' => $request->slug
         ]);
+
+        session()->flash('success', 'Category created successfully');
         return response()->json(['status' => 'success', 'message' => 'Category created successfully'], 200);
     }
 
@@ -65,6 +67,8 @@ class CategoryController extends Controller
             'name' => $request->name,
             'slug' => $request->slug
         ]);
+
+        session()->flash('success', 'Category updated successfully');
         return response()->json(['status' => 'success', 'message' => 'Category updated successfully'], 200);
     }
 
@@ -75,6 +79,8 @@ class CategoryController extends Controller
             return response()->json(['errors' => 'Category not found.', 'status' => 'errors']);
         }
         $category->delete();
+
+        session()->flash('success', 'Category deleted successfully');
         return response()->json(['status' => 'success', 'message' => 'Category deleted successfully'], 200);
     }
 }

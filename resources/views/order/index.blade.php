@@ -31,7 +31,7 @@
                     <table class="table table-striped data-table w-100">
                         <thead>
                             <tr>
-                                <th>Order</th>
+                                <th>id</th>
                                 <th>Date</th>
                                 <th>Customers</th>
                                 <th>Total</th>
@@ -72,10 +72,10 @@
                     }
                 },
                 columns: [
-                    { data: 'order'},
+                    { data: 'id'},
                     { data: 'created_at' },
                     { data: 'customer' },
-                    { data: 'total' },
+                    { data: 'grand_total' },
                     { data: 'status' },
                     { data: 'action', orderable: false, searchable: false }
                 ]

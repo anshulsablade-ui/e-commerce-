@@ -10,14 +10,19 @@ class Order extends Model
 
     protected $fillable = [
         'customer_id',
-        'order_number',
         'subtotal',
         'discount',
-        'total',
+        'grand_total',
         'status',
     ];
 
-    public function items()
+    protected $casts = [
+        'created_at' => 'datetime:d-m-Y h:i A',
+        'updated_at' => 'datetime:d-m-Y h:i A',
+    ];
+
+
+    public function orderItem()
     {
         return $this->hasMany(OrderItem::class, 'order_id', 'id');
     }

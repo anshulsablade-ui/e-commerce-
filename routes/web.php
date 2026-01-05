@@ -70,5 +70,6 @@ Route::middleware('login')->group(function () {
     Route::put('/order/{id}', [OrderController::class, 'update'])->name('order.update');
     Route::delete('/order/{id}', [OrderController::class, 'delete'])->name('order.delete');
 
-    
+    Route::get('/ajax/customer', [CustomerController::class, 'ajaxCustomer'])->name('ajax.customer');
+    Route::get('/ajax/product', [ProductController::class, 'ajaxProduct'])->name('ajax.product');
 });

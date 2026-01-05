@@ -124,6 +124,7 @@ class ProductController extends Controller
             }
 
             DB::commit();
+            session()->flash('success', 'Product created successfully');
             return response()->json(['status' => 'success', 'message' => 'Product created successfully'], 201);
 
         } catch (\Exception $e) {
@@ -213,6 +214,7 @@ class ProductController extends Controller
             }
 
             DB::commit();
+            session()->flash('success', 'Product updated successfully');
             return response()->json(['status' => 'success', 'message' => 'Product updated successfully'], 201);
 
         } catch (\Exception $e) {
@@ -237,6 +239,20 @@ class ProductController extends Controller
             $image->delete();
         }
         $product->delete();
+
+        session()->flash('success', 'Product deleted successfully');
         return response()->json(['status' => 'success', 'message' => 'Product deleted successfully'], 200);
+    }
+
+    public function ajaxProduct(Request $request)
+    {
+
+        $products = Product::where('category_id', $request->category_id)
+            ->where('name', 'LIKE', "%{$request->search}%")
+            ->select('id', 'name', 'price')
+            ->limit(20)
+            ->get();
+
+        return response()->json($products);
     }
 }

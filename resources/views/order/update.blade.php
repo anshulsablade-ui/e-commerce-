@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Add Order')
+@section('title', 'Edit Order')
 
 @section('style')
     <style>
@@ -19,8 +19,7 @@
         <div class="col-md-12 pb-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h4 class="fw-bold mb-1">Create Order</h4>
-                    <p class="text-muted mb-0">Add a new customer order</p>
+                    <h4 class="fw-bold mb-1">Edit Order</h4>
                 </div>
                 <a href="{{ route('order.index') }}" class="btn btn-outline-secondary">
                     ← Back to Orders
@@ -37,8 +36,10 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <label class="form-label">Customer Name</label>
-                                <select class="form-select select2" style="width: 100%" name="customer_id"
-                                    id="customer-select"></select>
+                                <select class="form-select select2" style="width: 100%" name="customer_id" id="customer-select">
+                                    <option value="{{ $order->customer->id }}">{{ $order->customer->name }}</option>
+
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -46,13 +47,15 @@
 
                         <div id="rowContainer">
 
+                          @foreach ($order->order_item as $item)
+                                
                             <div class="row product-row" data-row="0">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Category</label>
                                     <select class="form-select category-select" name="category_id[]">
                                         <option value="">Select Category</option>
                                         @foreach ($categories as $category)
-                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                            <option value="{{ $category->id }}" {{ $item->product->category->id == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -82,6 +85,7 @@
                                 </div>
                             </div>
 
+                          @endforeach
 
                         </div>
                         <div class="row">
@@ -117,7 +121,7 @@
 
                         <div class="row">
                             <div class="col-md-12">
-                                <button type="submit" class="btn btn-primary">Submit</button>
+                                <button type="submit" class="btn btn-primary">Update</button>
                             </div>
                         </div>
                     </div>
@@ -312,7 +316,7 @@
 
                 var formData = new FormData(this);
                 $.ajax({
-                    url: "{{ route('order.store') }}",
+                    url: "{{ route('order.update', $order->id) }}",
                     type: "POST",
                     data: formData,
                     contentType: false,

@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Yajra\DataTables\DataTables;
 
 class OrderController extends Controller
@@ -17,9 +20,6 @@ class OrderController extends Controller
             $orders = Order::all();
             return DataTables::of($orders)
                 ->addIndexColumn()
-                ->addColumn('order', function ($row) {
-                    return $row->order_number ?? 'N/A';
-                })
                 ->addColumn('customer', function ($row) {
                     return $row->customer->name ?? 'N/A';
                 })
@@ -29,16 +29,16 @@ class OrderController extends Controller
                 ->addColumn('descount', function ($row) {
                     return $row->discount ?? 'N/A';
                 })
-                ->addColumn('total', function ($row) {
-                    return $row->total ?? 'N/A';
+                ->addColumn('grand_total', function ($row) {
+                    return '₹' . $row->grand_total ?? 'N/A';
                 })
                 ->addColumn('status', function ($row) {
                     return $row->status ?? 'N/A';
                 })
                 ->addColumn('action', function ($row) {
                     return '<div class="d-flex justify-content-center">
-                    <a href="' . route('customer.show', $row->id) . '" class="menu-link"><i class="menu-icon tf-icons bx bx-show"></i></a>
-                    <a href="' . route('customer.edit', $row->id) . '" class="menu-link"><i class="menu-icon tf-icons bx bx-edit"></i></a>
+                    <a href="' . route('order.show', $row->id) . '" class="menu-link"><i class="menu-icon tf-icons bx bx-show"></i></a>
+                    <a href="' . route('order.edit', $row->id) . '" class="menu-link"><i class="menu-icon tf-icons bx bx-edit"></i></a>
                     <a href="javascript:void(0)" data-id="' . $row->id . '" class="menu-link delete"><i class="menu-icon text-danger tf-icons bx bx-trash"></i></a>
                 </div>';
                 })
@@ -50,9 +50,164 @@ class OrderController extends Controller
 
     public function create()
     {
-        $customers = Customer::all();
-        $products = Product::all();
         $categories = Category::all();
-        return view('order.create', compact('customers', 'products', 'categories'));
+        return view('order.create', compact('categories'));
     }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'product_id' => 'required|array|min:1',
+            'product_id.*' => 'required|exists:products,id',
+            'price' => 'required|array',
+            'quantity' => 'required|array',
+            'total' => 'required|array',
+            'order_status' => 'required|string',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            $subtotal = array_sum($request->total);
+
+            $discountPercent = $request->discount ?? 0;
+            $discountAmount = ($subtotal * $discountPercent) / 100;
+
+            $grandTotal = $subtotal - $discountAmount;
+
+            $order = Order::create([
+                'customer_id' => $request->customer_id,
+                'subtotal' => $subtotal,
+                'discount' => $discountAmount,
+                'grand_total' => $grandTotal,
+                'status' => $request->order_status,
+            ]);
+
+            foreach ($request->product_id as $index => $productId) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $productId,
+                    'price' => $request->price[$index],
+                    'quantity' => $request->quantity[$index],
+                    'total' => $request->total[$index],
+                ]);
+            }
+
+            DB::commit();
+
+            session()->flash('success', 'Order created successfully');
+            return response()->json([
+                'status' => true,
+                'message' => 'Order created successfully',
+                'order_id' => $order->id
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function show($id)
+    {
+        $order = Order::with('customer', 'orderItem.product')->find($id);
+        return view('order.show', compact('order'));
+    }
+
+    public function edit($id)
+    {
+        $categories = Category::all();
+        $order = Order::with('customer', 'orderItem.product.category')->find($id);
+        // dd($order->toArray());
+        return view('order.update', compact('order', 'categories'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'product_id' => 'required|array|min:1',
+            'product_id.*' => 'required|exists:products,id',
+            'price' => 'required|array',
+            'quantity' => 'required|array',
+            'total' => 'required|array',
+            'order_status' => 'required|string',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            $order = Order::findOrFail($id);
+            $subtotal = array_sum($request->total);
+
+            $discountPercent = $request->discount ?? 0;
+            $discountAmount = ($subtotal * $discountPercent) / 100;
+
+            $grandTotal = $subtotal - $discountAmount;
+
+            $order->update([
+                'customer_id' => $request->customer_id,
+                'subtotal' => $subtotal,
+                'discount' => $discountAmount,
+                'grand_total' => $grandTotal,
+                'status' => $request->order_status,
+            ]);
+
+            $order->items()->delete();
+
+            foreach ($request->product_id as $index => $productId) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $productId,
+                    'price' => $request->price[$index],
+                    'quantity' => $request->quantity[$index],
+                    'total' => $request->total[$index],
+                ]);
+            }
+
+            DB::commit();
+
+            session()->flash('success', 'Order updated successfully');
+            return response()->json([
+                'status' => true,
+                'message' => 'Order updated successfully',
+                'order_id' => $order->id
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function delete($id)
+    {
+        $order = Order::find($id);
+        if (!$order) {
+            return response()->json(['errors' => 'Order not found.', 'status' => 'errors']);
+        }
+        if ($order->items) {
+            foreach ($order->items as $item) {
+                $item->delete();
+            }
+        }
+        $order->delete();
+
+        session()->flash('success', 'Order deleted successfully');
+        return response()->json(['status' => 'success', 'message' => 'Order deleted successfully'], 200);
+    }
+
 }
