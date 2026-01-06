@@ -98,7 +98,7 @@ class CustomerController extends Controller
         $customer = Customer::find($id);
         $countries = Country::all();
         $cities = Country::find($customer->country_id)->cities;
-        return view('customer.update', compact('customer','countries', 'cities'));
+        return view('customer.update', compact('customer', 'countries', 'cities'));
     }
 
     public function update(Request $request)
@@ -161,10 +161,20 @@ class CustomerController extends Controller
 
     public function ajaxCustomer(Request $request)
     {
-        $customers = Customer::where('name', 'like', '%' . $request->search . '%')
-            ->select('id', 'name', 'email')
-            ->limit(20)
-            ->get();
+        $customers = Customer::where('name', 'like', "%{$request->search}%")
+            ->select('id', 'name', 'email', 'image')
+            ->limit(10)
+            ->get()
+            ->map(function ($customer) {
+                return [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'email' => $customer->email,
+                    'image' => $customer->image ? asset('customer/' . $customer->image) : asset('default/default.png'),
+                ];
+            });
+
         return response()->json($customers);
+
     }
 }

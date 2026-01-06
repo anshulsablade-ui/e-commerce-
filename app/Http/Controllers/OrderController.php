@@ -18,16 +18,19 @@ class OrderController extends Controller
     {
         if ($request->ajax()) {
             $orders = Order::all();
+            if ($request->status) {
+                $orders = $orders->where('status', $request->status);
+            }
             return DataTables::of($orders)
                 ->addIndexColumn()
+                ->addColumn('order_number', function ($row) {
+                    return $row->order_number ?? 'N/A';
+                })
                 ->addColumn('customer', function ($row) {
                     return $row->customer->name ?? 'N/A';
                 })
-                ->addColumn('subtotal', function ($row) {
-                    return $row->subtotal ?? 'N/A';
-                })
-                ->addColumn('descount', function ($row) {
-                    return $row->discount ?? 'N/A';
+                ->addColumn('items', function ($row) {
+                    return $row->orderItem->count() ?? 'N/A';
                 })
                 ->addColumn('grand_total', function ($row) {
                     return '₹' . $row->grand_total ?? 'N/A';
@@ -58,12 +61,14 @@ class OrderController extends Controller
     {
         $request->validate([
             'customer_id' => 'required|exists:customers,id',
-            'product_id' => 'required|array|min:1',
+            'product_id' => 'required|array',
             'product_id.*' => 'required|exists:products,id',
-            'price' => 'required|array',
             'quantity' => 'required|array',
-            'total' => 'required|array',
-            'order_status' => 'required|string',
+            'quantity.*' => 'required|integer|min:1',
+            'price' => 'required|array',
+            'price.*' => 'required|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0|max:100',
+            'order_status' => 'required|in:pending,processing,completed,cancelled',
         ]);
 
         DB::beginTransaction();
@@ -78,9 +83,11 @@ class OrderController extends Controller
             $grandTotal = $subtotal - $discountAmount;
 
             $order = Order::create([
+                'order_number'    => 'ORD-' . now()->format('Ymd') . '-' . rand(1000, 9999),
                 'customer_id' => $request->customer_id,
                 'subtotal' => $subtotal,
-                'discount' => $discountAmount,
+                'discount' => $request->discount,
+                'discount_amount' => $discountAmount,
                 'grand_total' => $grandTotal,
                 'status' => $request->order_status,
             ]);
@@ -117,7 +124,7 @@ class OrderController extends Controller
 
     public function show($id)
     {
-        $order = Order::with('customer', 'orderItem.product')->find($id);
+        $order = Order::with('customer', 'orderItem.product')->findOrFail($id);
         return view('order.show', compact('order'));
     }
 
@@ -133,12 +140,14 @@ class OrderController extends Controller
     {
         $request->validate([
             'customer_id' => 'required|exists:customers,id',
-            'product_id' => 'required|array|min:1',
+            'product_id' => 'required|array',
             'product_id.*' => 'required|exists:products,id',
-            'price' => 'required|array',
             'quantity' => 'required|array',
-            'total' => 'required|array',
-            'order_status' => 'required|string',
+            'quantity.*' => 'required|integer|min:1',
+            'price' => 'required|array',
+            'price.*' => 'required|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0|max:100',
+            'order_status' => 'required|in:pending,processing,completed,cancelled',
         ]);
 
         DB::beginTransaction();
@@ -156,12 +165,13 @@ class OrderController extends Controller
             $order->update([
                 'customer_id' => $request->customer_id,
                 'subtotal' => $subtotal,
-                'discount' => $discountAmount,
+                'discount' => $request->discount,
+                'discount_amount' => $discountAmount,
                 'grand_total' => $grandTotal,
                 'status' => $request->order_status,
             ]);
 
-            $order->items()->delete();
+            $order->orderItem()->delete();
 
             foreach ($request->product_id as $index => $productId) {
                 OrderItem::create([
@@ -199,8 +209,8 @@ class OrderController extends Controller
         if (!$order) {
             return response()->json(['errors' => 'Order not found.', 'status' => 'errors']);
         }
-        if ($order->items) {
-            foreach ($order->items as $item) {
+        if ($order->orderItem) {
+            foreach ($order->orderItem as $item) {
                 $item->delete();
             }
         }

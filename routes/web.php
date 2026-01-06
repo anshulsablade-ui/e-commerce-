@@ -72,4 +72,10 @@ Route::middleware('login')->group(function () {
 
     Route::get('/ajax/customer', [CustomerController::class, 'ajaxCustomer'])->name('ajax.customer');
     Route::get('/ajax/product', [ProductController::class, 'ajaxProduct'])->name('ajax.product');
+
+
+    // Dashboard
+    Route::get('/charts/profit-vs-revenue', [DashboardController::class, 'profitVsRevenue'])->name('profit-vs-revenue');
+    Route::get('/charts/order-status', [DashboardController::class, 'orderStatusChart'])->name('order-status');
+
 });

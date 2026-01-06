@@ -12,7 +12,8 @@
                 <div class="card-header pb-0">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title">Customer List</h5>
-                        <a href="{{ route('customer.create') }}" class="text-white btn btn-primary"><i class="tf-icons bx bx-plus"></i> Add Customer</a>
+                        <a href="{{ route('customer.create') }}" class="text-white btn btn-primary"><i
+                                class="tf-icons bx bx-plus"></i> Add Customer</a>
                     </div>
                 </div>
 
@@ -53,30 +54,24 @@
                 processing: true,
                 serverSide: true,
                 responsive: true,
-                ajax: "",
+                ajax: "{{ route('customer.index') }}",
                 columns: [
-                    { data: 'DT_RowIndex', orderable: false, searchable: false },
+                    { data: 'id', name: 'id', searchable: false },
                     {
                         data: 'customer',
-                        orderable: false,
-                        searchable: false,
-                        render: function (data) {
-                            return `
-                                <div class="d-flex align-items-center gap-2">
-                                    <img src="${data.image}" width="40" height="40"
-                                         class="rounded-circle object-fit-cover">
-                                    <span class="fw-semibold">${data.name}</span>
-                                </div>
-                            `;
+                        render: function(data) {
+                            return `<div class="d-flex align-items-center gap-2">
+                                        <img src="${data.image}" width="40" height="40" class="rounded-circle object-fit-cover">
+                                        <span class="fw-semibold">${data.name}</span>
+                                    </div>`;
                         }
                     },
-                    { data: 'email' },
-                    { data: 'country' },
-                    { data: 'city' },
+                    { data: 'email', name: 'email' },
+                    { data: 'country', name: 'country' },
+                    { data: 'city', name: 'city' },
                     { data: 'action', orderable: false, searchable: false }
                 ]
             });
-
 
             $('body').on('click', '.delete', function() {
 

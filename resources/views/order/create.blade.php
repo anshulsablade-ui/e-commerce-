@@ -161,15 +161,37 @@
                         return {
                             results: $.map(data, function(item) {
                                 return {
+                                    id: item.id,
                                     text: item.name,
-                                    id: item.id
+                                    email: item.email,
+                                    image: item.image
                                 }
                             })
                         };
                     },
                     cache: true
+                },
+                templateResult: formatCustomer,
+                escapeMarkup: function(markup) {
+                    return markup;
                 }
             });
+
+            function formatCustomer(customer) {
+                if (!customer.id) {
+                    return customer.text;
+                }
+
+                let image = customer.image ? customer.image : '/default/default.png';
+
+                return `<div class="d-flex align-items-center gap-3">
+                            <img src="${image}" class="rounded-circle" width="40" height="40" style="object-fit: cover;">
+                            <div>
+                                <div class="fw-semibold">${customer.text}</div>
+                                <small class="text-muted">${customer.email ?? ''}</small>
+                            </div>
+                        </div>`;
+            }
 
 
             initProductSelect($('.product-row').first());
@@ -199,11 +221,16 @@
                                     return {
                                         id: item.id,
                                         text: item.name,
-                                        price: item.price
+                                        price: item.price,
+                                        image: item.image
                                     };
                                 })
                             };
                         }
+                    },
+                    templateResult: formatProduct,
+                    escapeMarkup: function(markup) {
+                        return markup;
                     }
                 });
 
@@ -212,6 +239,20 @@
                     $row.find('.price').val(e.params.data.price);
                     calculateRow($row);
                 });
+            }
+
+            function formatProduct(product) {
+                if (!product.id) {
+                    return product.text;
+                }
+
+                return `<div class="d-flex align-items-center gap-3">
+                            <img src="${product.image}" class="rounded-circle" width="40" height="40" style="object-fit: cover;">
+                            <div>
+                                <div class="fw-semibold">${product.text}</div>
+                                <small class="text-muted">₹ ${product.price}</small>
+                            </div>
+                        </div>`;
             }
 
             $(document).on('change', ' #discount', function() {
@@ -237,7 +278,7 @@
                     total += parseFloat($(this).val()) || 0;
                 });
 
-                
+
                 let discount = (total * $('#discount').val()) / 100;
                 $('#subtotal').text(total.toFixed(2));
                 $('#discountAmount').text(discount.toFixed(2));
@@ -322,7 +363,8 @@
                     },
                     error: function(xhr) {
                         $.each(xhr.responseText.message, function(key, value) {
-                            $(`#${key}`).addClass('is-invalid').after(`<div class="invalid-feedback">${value}</div>`);
+                            $(`#${key}`).addClass('is-invalid').after(
+                                `<div class="invalid-feedback">${value}</div>`);
                         });
                     }
                 });

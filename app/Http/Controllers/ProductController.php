@@ -244,15 +244,27 @@ class ProductController extends Controller
         return response()->json(['status' => 'success', 'message' => 'Product deleted successfully'], 200);
     }
 
-    public function ajaxProduct(Request $request)
-    {
+public function ajaxProduct(Request $request)
+{
+    $products = Product::with('images') // load relationship
+        ->when($request->category_id, function ($q) use ($request) {
+            $q->where('category_id', $request->category_id);
+        })
+        ->when($request->search, function ($q) use ($request) {
+            $q->where('name', 'LIKE', "%{$request->search}%");
+        })
+        ->limit(10)
+        ->get()
+        ->map(function ($product) {
+            return [
+                'id'    => $product->id,
+                'name'  => $product->name,
+                'price' => $product->price,
+                'image' => $product->images->first() ? asset('product/' . $product->images->first()->image) : asset('product/no-image.png'),
+            ];
+        });
 
-        $products = Product::where('category_id', $request->category_id)
-            ->where('name', 'LIKE', "%{$request->search}%")
-            ->select('id', 'name', 'price')
-            ->limit(20)
-            ->get();
+    return response()->json($products);
+}
 
-        return response()->json($products);
-    }
 }
