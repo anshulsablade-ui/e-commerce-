@@ -39,6 +39,7 @@
                                 <label class="form-label">Customer Name</label>
                                 <select class="form-select select2" style="width: 100%" name="customer_id"
                                     id="customer-select"></select>
+                                <div class="invalid-feedback customer_error"></div>
                             </div>
                         </div>
                     </div>
@@ -49,27 +50,31 @@
                             <div class="row product-row" data-row="0">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Category</label>
-                                    <select class="form-select category-select" name="category_id[]">
+                                    <select class="form-select category" name="category[]">
                                         <option value="">Select Category</option>
                                         @foreach ($categories as $category)
                                             <option value="{{ $category->id }}">{{ $category->name }}</option>
                                         @endforeach
                                     </select>
+                                    <div class="invalid-feedback category_error"></div>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Product</label>
-                                    <select class="form-select product-select" name="product_id[]"></select>
+                                    <select class="form-select product" name="product[]"></select>
+                                    <div class="invalid-feedback product_error"></div>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
                                     <label class="form-label">Price</label>
                                     <input type="number" class="form-control price" name="price[]" readonly>
+                                    <div class="invalid-feedback price_error"></div>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
                                     <label class="form-label">Qty</label>
                                     <input type="number" class="form-control quantity" name="quantity[]" value="1">
+                                    <div class="invalid-feedback quantity_error"></div>
                                 </div>
 
                                 <div class="col-md-3 mb-3">
@@ -199,8 +204,7 @@
 
             function initProductSelect($row) {
 
-                console.log($row);
-                let $productSelect = $row.find('.product-select');
+                let $productSelect = $row.find('.product');
 
                 $productSelect.select2({
                     theme: 'bootstrap-5',
@@ -212,7 +216,7 @@
                         data: function(params) {
                             return {
                                 search: params.term,
-                                category_id: $row.find('.category-select').val()
+                                category_id: $row.find('.category').val()
                             };
                         },
                         processResults: function(data) {
@@ -255,7 +259,7 @@
                         </div>`;
             }
 
-            $(document).on('change', ' #discount', function() {
+            $(document).on('keyup change', '#discount', function() {
                 calculateGrandTotal();
             });
 
@@ -285,9 +289,9 @@
                 $('#grandTotal').text((total - discount).toFixed(2));
             }
 
-            $(document).on('change', '.category-select', function() {
+            $(document).on('change', '.category', function() {
                 let row = $(this).closest('.product-row');
-                row.find('.product-select').val(null).trigger('change');
+                row.find('.product').val(null).trigger('change');
                 row.find('.price, .row-total').val('');
                 calculateGrandTotal();
             });
@@ -300,24 +304,28 @@
                 var $row = $(`<div class="row product-row" data-row="${rowIndex}">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Category</label>
-                                    <select class="form-select category-select" name="category_id[]">
+                                    <select class="form-select category" name="category[]">
                                         <option value="">Select Category</option>
                                         @foreach ($categories as $category)
                                             <option value="{{ $category->id }}">{{ $category->name }}</option>
                                         @endforeach
                                     </select>
+                                    <div class="invalid-feedback category_error"></div>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Product</label>
-                                    <select class="form-select product-select" name="product_id[]"></select>
+                                    <select class="form-select product" name="product[]"></select>
+                                    <div class="invalid-feedback product_error"></div>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label class="form-label">Price</label>
                                     <input type="number" class="form-control price" name="price[]" readonly>
+                                    <div class="invalid-feedback price_error"></div>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label class="form-label">Qty</label>
                                     <input type="number" class="form-control quantity" name="quantity[]" value="1">
+                                    <div class="invalid-feedback quantity_error"></div>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label class="form-label">Total</label>
@@ -351,23 +359,47 @@
             $('#orderForm').submit(function(e) {
                 e.preventDefault();
 
-                var formData = new FormData(this);
-                $.ajax({
-                    url: "{{ route('order.store') }}",
-                    type: "POST",
-                    data: formData,
-                    contentType: false,
-                    processData: false,
-                    success: function(response) {
-                        window.location.href = "{{ route('order.index') }}";
+                let formData = new FormData(this);
+
+                ajaxCall("{{ route('order.store') }}", "POST", formData, function(response) {
+                        if (response.status === 'success') {
+                            window.location.href = "{{ route('order.index') }}";
+                        }
                     },
-                    error: function(xhr) {
-                        $.each(xhr.responseText.message, function(key, value) {
-                            $(`#${key}`).addClass('is-invalid').after(
-                                `<div class="invalid-feedback">${value}</div>`);
-                        });
+                    function(xhr) {
+                        if (xhr.status === 422) {
+                            let errors = xhr.responseJSON.errors;
+
+                            $('.is-invalid').removeClass('is-invalid');
+                            $('.invalid-feedback').text('');
+
+                            $.each(errors, function(key, value) {
+
+                                // Customer
+                                if (key === 'customer_id') {
+                                    $('#customer-select').addClass('is-invalid');
+                                    $('.customer_error').text(value[0]);
+                                }
+                                if (key === 'product') {
+                                    $('.product').addClass('is-invalid');
+                                    $('.product_error').text(value[0]);
+                                }
+
+                                if (key.includes('.')) {
+                                    let parts = key.split('.');
+                                    let field = parts[0]; 
+                                    let index = parts[1]; 
+
+                                    let row = $(`.product-row[data-row="${index}"]`);
+
+                                    row.find(`.${field}`).addClass('is-invalid');
+                                    row.find(`.${field}_error`).text(value[0]);
+                                }
+                            });
+                        }
                     }
-                });
+                );
+
             });
         });
     </script>

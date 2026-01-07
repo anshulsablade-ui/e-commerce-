@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" class="light-style customizer-hide" dir="ltr" data-theme="theme-default" data-assets-path="../assets/"
-    data-template="vertical-menu-template-free">
+<html lang="en" class="light-style customizer-hide" dir="ltr" data-theme="theme-default"
+    data-assets-path="../assets/" data-template="vertical-menu-template-free">
 
 <head>
     <meta charset="utf-8" />
@@ -51,20 +51,22 @@
                         <!-- Logo -->
                         <div class="app-brand justify-content-center">
                             <a href="javascript:void(0);" class="app-brand-link gap-2">
-                                <span class="app-brand-text demo text-body fw-bolder">Admin</span>
+                                <span class="app-brand-text demo text-body fw-bolder">{{ env('APP_NAME') }}</span>
                             </a>
                         </div>
                         <!-- /Logo -->
-                        <h4 class="mb-2">Welcome to Admin!</h4>
+                        <h4 class="mb-2">Welcome to {{ env('APP_NAME') }}!</h4>
 
                         <form id="registerForm" class="mb-3">
                             <div class="mb-3">
                                 <label for="username" class="form-label">Username</label>
-                                <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" autofocus />
+                                <input type="text" class="form-control" id="username" name="username"
+                                    placeholder="Enter your username" autofocus />
                             </div>
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email</label>
-                                <input type="text" class="form-control" id="email" name="email" placeholder="Enter your email" />
+                                <input type="text" class="form-control" id="email" name="email"
+                                    placeholder="Enter your email" />
                             </div>
                             <div class="mb-3 form-password-toggle is-invalid">
                                 <label class="form-label" for="password">Password</label>
@@ -76,24 +78,12 @@
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="terms-conditions"
-                                        name="terms" />
-                                    <label class="form-check-label" for="terms-conditions">
-                                        I agree to
-                                        <a href="javascript:void(0);">privacy policy & terms</a>
-                                    </label>
-                                </div>
-                            </div>
                             <button class="btn btn-primary d-grid w-100">Sign up</button>
                         </form>
 
                         <p class="text-center">
                             <span>Already have an account?</span>
-                            <a href="{{ route('login') }}">
-                                <span>Sign in</span>
-                            </a>
+                            <a href="{{ route('login') }}"><span>Sign in</span></a>
                         </p>
                     </div>
                 </div>
@@ -115,51 +105,39 @@
     <script src="../assets/js/main.js"></script>
     <script async defer src="https://buttons.github.io/buttons.js"></script>
 
+    <script src="{{ asset('js/ajax.js') }}"></script>
+
     <script>
-        $(document).ready(function () {
+        $(document).ready(function() {
 
-            $.ajaxSetup({
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                }
-            });
-
-            $('#registerForm').submit(function (e) {
+            $('#registerForm').submit(function(e) {
                 e.preventDefault();
 
                 var formData = new FormData(this);
-                $.ajax({
-                    type: "POST",
-                    url: "{{ route('register') }}",
-                    data: formData,
-                    contentType: false,
-                    processData: false,
-                    success: function (response) {
-                        if (response.status == 'success') {
-                            window.location.href = "{{ route('dashboard') }}";
-                        }
-                    },
-                    error: function (response) {
+                
+                ajaxCall('{{ route('register') }}', 'POST', formData, function(response) {
+                    if (response.status == 'success') {
+                        window.location.href = "{{ route('dashboard') }}";
+                    }
+                }, function(response) {
 
-                        $('#email').removeClass('is-invalid');
-                        $('#password').removeClass('is-invalid');
-                        $('.invalid-feedback').remove();
-                        
-                        var response = JSON.parse(response.responseText);
-                        console.log(response.message);
-                        if (response.message.username) {
-                            var data = `<div class="invalid-feedback">${response.message.username[0]}</div>`;
-                            $('#username').addClass('is-invalid').after(data);
-                        }
-                        if (response.message.email) {
-                            var data = `<div class="invalid-feedback">${response.message.email[0]}</div>`;
-                            $('#email').addClass('is-invalid').after(data);
-                        }
-                        if (response.message.password) {
-                            var data = `<div class="invalid-feedback">${response.message.password[0]}</div>`;
-                            $('#password').addClass('is-invalid').parents().after(data);
-                        }
+                    $('.is-invalid').removeClass('is-invalid');
+                    $('.invalid-feedback').remove();
 
+                    var response = JSON.parse(response.responseText);
+                    if (response.message.username) {
+                        var data = `<div class="invalid-feedback">${response.message.username[0]}</div>`;
+                        $('#username').addClass('is-invalid').after(data);
+                    }
+                    if (response.message.email) {
+                        var data = `<div class="invalid-feedback">${response.message.email[0]}</div>`;
+                        $('#email').addClass('is-invalid').after(data);
+                    }
+                    if (response.message.password) {
+                        var data = `<div class="invalid-feedback">${response.message.password[0]}</div>`;
+                        $('#password').addClass('is-invalid');
+                        $('.form-password-toggle > div').addClass('is-invalid').append(data);
+                         
                     }
                 });
             });

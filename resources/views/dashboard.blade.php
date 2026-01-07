@@ -48,8 +48,14 @@
             <div class="card">
                 <div class="row row-bordered g-0">
                     <div class="col-md-12">
-                        <h5 class="card-header m-0 me-2 pb-3">Profit vs Revenue</h5>
-                        <div id="profitRevenueChart"></div>
+                        <h5 class="card-header m-0 me-2 pb-3">Total Revenue</h5>
+                        <div id="revenueChartLoader" class="text-center my-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+
+                        <div id="revenueChart" style="display:none;"></div>
                     </div>
                 </div>
             </div>
@@ -59,6 +65,11 @@
                 <div class="row row-bordered g-0">
                     <div class="col-md-12">
                         <h5 class="card-header m-0 me-2 pb-3">Order Status</h5>
+                        <div id="orderStatusChartLoader" class="text-center my-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
                         <div id="orderStatusChart"></div>
                     </div>
                 </div>
@@ -70,75 +81,113 @@
 
 @section('script')
     <script>
+        $(document).ready(function() {
+
+            $('#revenueChartLoader').show();
+            $('#orderStatusChartLoader').show();
+            $('#revenueChart').hide();
+            $('#orderStatusChart').hide();
+
+            $.ajax({
+                url: "{{ route('revenue.chart') }}",
+                method: "GET",
+
+                success: function(response) {
+                    $('#revenueChartLoader').hide();
+                    $('#revenueChart').show();
+
+                    var options = {
+                        chart: {
+                            type: 'bar',
+                            height: 280,
+                            toolbar: {
+                                show: false
+                            }
+                        },
+                        series: [{
+                            name: 'Total Revenue',
+                            data: response
+                        }],
+                        xaxis: {
+                            categories: [
+                                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                            ]
+                        },
+                        stroke: {
+                            curve: 'smooth',
+                            width: 3
+                        },
+                        dataLabels: {
+                            enabled: false
+                        },
+                        tooltip: {
+                            y: {
+                                formatter: function(val) {
+                                    return '₹' + val.toLocaleString();
+                                }
+                            }
+                        }
+                    };
+
+                    new ApexCharts(document.querySelector("#revenueChart"),
+                        options
+                    ).render();
+                }
+            });
+
+
+            $.ajax({
+                type: "{{ route('order.status.chart') }}",
+                method: "get",
+                success: function(response) {
+                    $('#orderStatusChartLoader').hide();
+                    $('#orderStatusChart').show();
+
+                    let labels = [];
+                    let series = [];
+
+                    response.forEach(item => {
+                        labels.push(item.status);
+                        series.push(item.total);
+                    });
+
+                    new ApexCharts(document.querySelector("#orderStatusChart"), {
+                        chart: {
+                            type: 'donut',
+                            height: 300
+                        },
+                        labels: labels,
+                        series: series
+                    }).render();
+                }
+            });
+        });
+    </script>
+
+    <script>
         $(function() {
 
-            $.getJSON('/charts/order-status', function(res) {
+
+            // order status
+            $.getJSON('/charts/order-status', function(response) {
 
                 let labels = [];
                 let series = [];
 
-                res.forEach(item => {
+                response.forEach(item => {
                     labels.push(item.status);
                     series.push(item.total);
                 });
 
                 new ApexCharts(document.querySelector("#orderStatusChart"), {
                     chart: {
-                        type: 'pie',
+                        type: 'donut',
                         height: 300
                     },
                     labels: labels,
                     series: series
                 }).render();
-            });
-
-            $.getJSON('/charts/profit-vs-revenue', function(res) {
-
-                let months = [];
-                let revenue = [];
-                let profit = [];
-
-                res.forEach(item => {
-                    months.push('Month ' + item.month);
-                    revenue.push(item.revenue);
-                    profit.push(item.profit);
-                });
-
-                let options = {
-                    chart: {
-                        type: 'bar',
-                        height: 300,
-                        toolbar: {
-                            show: false
-                        }
-                    },
-                    series: [{
-                            name: 'Revenue',
-                            data: revenue
-                        },
-                        {
-                            name: 'Profit',
-                            data: profit
-                        }
-                    ],
-                    xaxis: {
-                        categories: months
-                    },
-                    stroke: {
-                        curve: 'smooth',
-                        width: 3
-                    },
-                    markers: {
-                        size: 5
-                    },
-                    legend: {
-                        position: 'top'
-                    }
-                };
-
-                new ApexCharts(document.querySelector("#profitRevenueChart"),
-                    options
-                ).render();
             });
 
         });

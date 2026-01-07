@@ -23,8 +23,6 @@ Route::post('/register', [AuthController::class, 'register'])->name('register');
 
 Route::middleware('login')->group(function () {
     Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
-    
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Product
     Route::get('/product/index', [ProductController::class, 'index'])->name('product.index');
@@ -75,7 +73,8 @@ Route::middleware('login')->group(function () {
 
 
     // Dashboard
-    Route::get('/charts/profit-vs-revenue', [DashboardController::class, 'profitVsRevenue'])->name('profit-vs-revenue');
-    Route::get('/charts/order-status', [DashboardController::class, 'orderStatusChart'])->name('order-status');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/charts/order-status', [DashboardController::class, 'orderStatusChart'])->name('order.status.chart');
+    Route::get('/chart/revenue', [DashboardController::class, 'revenueChart'])->name('revenue.chart');
 
 });

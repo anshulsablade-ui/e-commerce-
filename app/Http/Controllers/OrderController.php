@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\OrderRequest;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Order;
@@ -17,7 +18,7 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $orders = Order::all();
+            $orders = Order::orderBy('id', 'desc')->get();
             if ($request->status) {
                 $orders = $orders->where('status', $request->status);
             }
@@ -57,19 +58,25 @@ class OrderController extends Controller
         return view('order.create', compact('categories'));
     }
 
-    public function store(Request $request)
+    public function store(OrderRequest $request)
     {
-        $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'product_id' => 'required|array',
-            'product_id.*' => 'required|exists:products,id',
-            'quantity' => 'required|array',
-            'quantity.*' => 'required|integer|min:1',
-            'price' => 'required|array',
-            'price.*' => 'required|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0|max:100',
-            'order_status' => 'required|in:pending,processing,completed,cancelled',
-        ]);
+        $data = $request->validated();
+
+        $customer = Customer::find($request->customer_id);
+        if (!$customer) {
+            return response()->json(['status' => 'error', 'message' => 'Customer not found.'], 404);
+        }
+
+        // product out of stock
+        foreach ($request->product as $index => $productId) {
+            $product = Product::find($productId);
+            if (!$product) {
+                return response()->json(['status' => 'error', 'message' => 'Product not found.'], 404);
+            }
+            if ($product->stock < $request->quantity[$index]) {
+                return response()->json(['status' => 'error', 'message' => 'Product ' . $product->name . ' is out of stock.'], 400);
+            }
+        }
 
         DB::beginTransaction();
 
@@ -92,7 +99,7 @@ class OrderController extends Controller
                 'status' => $request->order_status,
             ]);
 
-            foreach ($request->product_id as $index => $productId) {
+            foreach ($request->product as $index => $productId) {
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $productId,
@@ -100,13 +107,18 @@ class OrderController extends Controller
                     'quantity' => $request->quantity[$index],
                     'total' => $request->total[$index],
                 ]);
+
+                // Update product quantity
+                $product = Product::find($productId);
+                $product->stock -= $request->quantity[$index];
+                $product->save();
             }
 
             DB::commit();
 
             session()->flash('success', 'Order created successfully');
             return response()->json([
-                'status' => true,
+                'status' => 'success',
                 'message' => 'Order created successfully',
                 'order_id' => $order->id
             ]);
@@ -136,19 +148,9 @@ class OrderController extends Controller
         return view('order.update', compact('order', 'categories'));
     }
 
-    public function update(Request $request, $id)
+    public function update(orderRequest $request, $id)
     {
-        $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'product_id' => 'required|array',
-            'product_id.*' => 'required|exists:products,id',
-            'quantity' => 'required|array',
-            'quantity.*' => 'required|integer|min:1',
-            'price' => 'required|array',
-            'price.*' => 'required|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0|max:100',
-            'order_status' => 'required|in:pending,processing,completed,cancelled',
-        ]);
+        $data = $request->validated();
 
         DB::beginTransaction();
 
@@ -171,9 +173,19 @@ class OrderController extends Controller
                 'status' => $request->order_status,
             ]);
 
-            $order->orderItem()->delete();
+            $orderItems = $order->orderItem()->get();
 
-            foreach ($request->product_id as $index => $productId) {
+            foreach ($orderItems as $orderItem) {
+
+                $orderItem->delete();
+
+                $product = Product::find($orderItem->product_id);
+                $product->stock += $orderItem->quantity;
+                $product->save();
+            }
+
+
+            foreach ($request->product as $index => $productId) {
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $productId,
@@ -181,13 +193,18 @@ class OrderController extends Controller
                     'quantity' => $request->quantity[$index],
                     'total' => $request->total[$index],
                 ]);
+
+                // Update product quantity
+                $product = Product::find($productId);
+                $product->stock -= $request->quantity[$index];
+                $product->save();
             }
 
             DB::commit();
 
             session()->flash('success', 'Order updated successfully');
             return response()->json([
-                'status' => true,
+                'status' => 'success',
                 'message' => 'Order updated successfully',
                 'order_id' => $order->id
             ]);

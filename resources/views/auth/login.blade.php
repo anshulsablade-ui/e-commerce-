@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" class="light-style customizer-hide" dir="ltr" data-theme="theme-default" data-assets-path="../assets/"
-    data-template="vertical-menu-template-free">
+<html lang="en" class="light-style customizer-hide" dir="ltr" data-theme="theme-default"
+    data-assets-path="../assets/" data-template="vertical-menu-template-free">
 
 <head>
     <meta charset="utf-8" />
@@ -51,35 +51,27 @@
                         <!-- Logo -->
                         <div class="app-brand justify-content-center">
                             <a href="javascript:void(0);" class="app-brand-link gap-2">
-                                <span class="app-brand-text demo text-body fw-bolder">Admin</span>
+                                <span class="app-brand-text demo text-body fw-bolder">{{ env('APP_NAME') }}</span>
                             </a>
                         </div>
                         <!-- /Logo -->
-                        <h4 class="mb-2">Welcome to Admin!</h4>
+                        <h4 class="mb-2">Welcome to {{ env('APP_NAME') }}!</h4>
 
                         <form id="loginForm" class="mb-3">
 
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email</label>
-                                <input type="text" class="form-control" id="email" name="email" placeholder="Enter your email" autofocus />
+                                <input type="text" class="form-control" id="email" name="email"
+                                    placeholder="Enter your email" autofocus />
                             </div>
                             <div class="mb-3 form-password-toggle">
                                 <div class="d-flex justify-content-between">
                                     <label class="form-label" for="password">Password</label>
-                                    <a href="auth-forgot-password-basic.html">
-                                        <small>Forgot Password?</small>
-                                    </a>
                                 </div>
                                 <div class="input-group input-group-merge is-invalid">
                                     <input type="password" id="password" class="form-control" name="password"
                                         placeholder="Enter your password" aria-describedby="password" />
                                     <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="remember-me" />
-                                    <label class="form-check-label" for="remember-me"> Remember Me </label>
                                 </div>
                             </div>
                             <div class="mb-3">
@@ -129,7 +121,7 @@
     <script src="{{ asset('js/ajax.js') }}"></script>
 
     <script>
-        $(document).ready(function () {
+        $(document).ready(function() {
 
             $.ajaxSetup({
                 headers: {
@@ -137,38 +129,28 @@
                 }
             });
 
-            $('#loginForm').submit(function (e) {
+            $('#loginForm').submit(function(e) {
                 e.preventDefault();
 
                 var formData = new FormData(this);
-                $.ajax({
-                    type: "POST",
-                    url: "{{ route('login') }}",
-                    data: formData,
-                    contentType: false,
-                    processData: false,
-                    success: function (response) {
-                        if (response.status == 'success') {
-                            window.location.href = "{{ route('dashboard') }}";
-                        }
-                    },
-                    error: function (response) {
 
-                        $('#email').removeClass('is-invalid');
-                        $('#password').removeClass('is-invalid');
-                        $('.invalid-feedback').remove();
+                ajaxCall("{{ route('login') }}", "POST", formData, function(response) {
+                    if (response.status == 'success') {
+                        window.location.href = "{{ route('dashboard') }}";
+                    }
+                }, function(response) {
 
-                        var response = JSON.parse(response.responseText);
-                        console.log(response.message);
-                        if (response.message.email) {
-                            var data = `<div class="invalid-feedback">${response.message.email[0]}</div>`;
-                            $('#email').addClass('is-invalid').after(data);
-                        }
-                        if (response.message.password) {
-                            var data = `<div class="invalid-feedback">${response.message.password[0]}</div>`;
-                            $('#password').addClass('is-invalid').parents().after(data);
-                        }
-
+                    $('.is-invalid').removeClass('is-invalid');
+                    $('.invalid-feedback').remove();
+                    var response = JSON.parse(response.responseText);
+                    if (response.message.email) {
+                        var data = `<div class="invalid-feedback">${response.message.email[0]}</div>`;
+                        $('#email').addClass('is-invalid').after(data);
+                    }
+                    if (response.message.password) {
+                        var data = `<div class="invalid-feedback">${response.message.password[0]}</div>`;
+                        $('#password').addClass('is-invalid');
+                        $('.form-password-toggle > div').addClass('is-invalid').append(data);
                     }
                 });
             });

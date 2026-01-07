@@ -30,29 +30,21 @@ class DashboardController extends Controller
         return response()->json($ordersStatus);
     }
 
-
-    public function profitVsRevenue()
+    public function revenueChart()
     {
-        $data = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->select(
-                DB::raw('MONTH(orders.created_at) as month'),
-                DB::raw('SUM(order_items.total) as revenue'),
-                DB::raw('SUM(order_items.price * order_items.quantity * 0.7) as cost')
-            )
+        $revenue = OrderItem::join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.status', 'completed')
+            ->whereYear('orders.created_at', now()->year)
+            ->selectRaw('MONTH(orders.created_at) as month, SUM(order_items.price * order_items.quantity) as total')
             ->groupBy('month')
-            ->orderBy('month')
-            ->get();
-            // dd($data->toArray());
+            ->pluck('total', 'month');
 
-        $result = $data->map(function ($row) {
-            return [
-                'month' => $row->month,
-                'revenue' => round($row->revenue, 2),
-                'profit' => round($row->revenue - $row->cost, 2),
-            ];
-        });
-
-        return response()->json($result);
+            // dd($revenue);
+        $monthlyRevenue = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $monthlyRevenue[] = (float) ($revenue[$i] ?? 0);
+        }
+        // dd($monthlyRevenue);
+        return response()->json($monthlyRevenue);
     }
-
 }

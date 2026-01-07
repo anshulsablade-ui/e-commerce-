@@ -86,7 +86,7 @@
                     }
                 },
                 columns: [
-                    { data: 'DT_RowIndex', orderable: false, searchable: false },
+                    { data: 'id' },
                     {
                         data: 'image',
                         orderable: false,
