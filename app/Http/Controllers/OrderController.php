@@ -120,7 +120,7 @@ class OrderController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Order created successfully',
-                'order_id' => $order->id
+                'order_id' => $order->order_number
             ]);
 
         } catch (\Exception $e) {

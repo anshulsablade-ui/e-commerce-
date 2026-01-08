@@ -14,7 +14,7 @@
                         <h5 class="card-title">Filter</h5>
                         <a href="{{ route('order.create') }}" class="text-white btn btn-primary"><i class="tf-icons bx bx-plus"></i> Add Order</a>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center row pt-4 gap-6 gap-md-0 g-md-6">
+                    <div class="d-flex justify-content-between align-items-center row pt-1 gap-6 gap-md-0 g-md-6">
                         <div class="col-md-4 order_status">
                             <select id="filterStatus" class="form-select text-capitalize" name="status">
                                 <option value="">Status</option>

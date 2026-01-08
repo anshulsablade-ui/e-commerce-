@@ -109,17 +109,25 @@
                                     <option value="cancelled">Cancelled</option>
                                 </select>
                             </div>
+
+                            {{-- <div class="col-md-3 mb-3 d-flex align-items-end">
+                                <button id="custom-paypal-btn" class="btn btn-success">💳 Pay Now</button>
+                            </div> --}}
                         </div>
 
-                        <div class="row justify-content-end">
-                            <div class="col-md-3">
-                                <h6>Subtotal: ₹ <span id="subtotal">0.00</span></h6>
-                                <h6>Discount: ₹ <span id="discountAmount">0.00</span></h6>
-                                <h6>Grand Total: ₹ <span id="grandTotal">0.00</span></h6>
-
+                        <div class="row justify-content-between">
+                            <div class="col-md-6">
+                                <div id="paypal-button-container" class="col-md-3 mb-3 d-flex align-items-end text-end">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-end">
+                                    <h6>Subtotal: ₹ <span id="subtotal">0.00</span></h6>
+                                    <h6>Discount: ₹ <span id="discountAmount">0.00</span></h6>
+                                    <h6>Grand Total: ₹ <span id="grandTotal">0.00</span></h6>
+                                </div>
                             </div>
                         </div>
-
                         <div class="row">
                             <div class="col-md-12">
                                 <button type="submit" class="btn btn-primary">Submit</button>
@@ -136,6 +144,7 @@
 
 @section('script')
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id={{ config('paypal.sandbox.client_id') }}&currency=USD"></script>
 
     <script>
         $(document).ready(function() {
@@ -387,8 +396,8 @@
 
                                 if (key.includes('.')) {
                                     let parts = key.split('.');
-                                    let field = parts[0]; 
-                                    let index = parts[1]; 
+                                    let field = parts[0];
+                                    let index = parts[1];
 
                                     let row = $(`.product-row[data-row="${index}"]`);
 
@@ -403,4 +412,50 @@
             });
         });
     </script>
+
+    <script>
+        paypal.Buttons({
+            createOrder: function() {
+    let amount = $('#grandTotal').text().trim(); // ✅ FIX
+
+    // Convert to PayPal format
+    amount = parseFloat(amount).toFixed(2);
+
+    console.log('PayPal Amount:', amount);
+
+                return $.ajax({
+                    url: '/paypal/create-order',
+                    method: 'POST',
+                    data: { amount: amount }
+                }).then(function(response) {
+                    console.log('Order Response:', response.id);
+                    return response.id;
+                });
+            },
+
+            onApprove: function(data) {
+                return $.ajax({
+                    url: '/paypal/capture-order',
+                    method: 'POST',
+                    data: { orderID: data.orderID }
+                }).then(function(res) {
+                    alert('Payment Successful!');
+                    console.log(res);
+                });
+            },
+
+            onCancel: function() {
+                alert('Payment cancelled');
+            },
+
+            onError: function(err) {
+                console.log(err);
+                if (err.status == 400) {
+                    alert(err.message);
+                }
+                alert('Payment failed');
+            }
+        }).render('#paypal-button-container');
+    </script>
+
 @endsection

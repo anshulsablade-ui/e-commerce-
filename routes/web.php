@@ -5,13 +5,14 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PayPalController;
 use App\Http\Controllers\ProductController;
-use App\Models\Product;
+use App\Http\Controllers\StripePaymentController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('layouts.app');
-});
+// Route::get('/', function () {
+//     return view('layouts.app');
+// });
 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('showLoginForm');
 Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -77,4 +78,11 @@ Route::middleware('login')->group(function () {
     Route::get('/charts/order-status', [DashboardController::class, 'orderStatusChart'])->name('order.status.chart');
     Route::get('/chart/revenue', [DashboardController::class, 'revenueChart'])->name('revenue.chart');
 
+
+    // paypal
+    Route::post('/paypal/create-order', [PayPalController::class, 'createOrder'])->name('paypal.create.order');
+    Route::post('/paypal/capture-order', [PayPalController::class, 'captureOrder'])->name('paypal.capture.order');
+
+    //stripe
+    Route::post('/create-payment-intent', [StripePaymentController::class, 'createPaymentIntent']);
 });
