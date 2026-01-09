@@ -16,6 +16,7 @@ class Order extends Model
         'discount_amount',
         'grand_total',
         'status',
+        'payment_status'
     ];
 
     protected $casts = [
@@ -32,5 +33,10 @@ class Order extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class, 'customer_id', 'id');
+    }
+
+    public function payment()
+    {
+        return $this->hasOne(Payment::class, 'order_id', 'id');
     }
 }

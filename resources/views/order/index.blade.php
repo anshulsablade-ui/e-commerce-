@@ -37,6 +37,7 @@
                                 <th>items</th>
                                 <th>Total</th>
                                 <th>Status</th>
+                                <th>Payment</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -86,6 +87,15 @@
                                 return `<span class="badge bg-label-success me-1">Completed</span>`;
                             } else if (data === 'cancelled') {
                                 return `<span class="badge bg-label-danger me-1">Cancelled</span>`;
+                            }
+                        }
+                     },
+                    { data: 'payment_status',
+                        render: function (data) {
+                            if (data === 'paid') {
+                                return `<span class="badge bg-label-success me-1">Paid</span>`;
+                            } else if (data === 'pending') {
+                                return `<span class="badge bg-label-danger me-1">pending</span>`;
                             }
                         }
                      },

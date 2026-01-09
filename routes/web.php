@@ -80,9 +80,12 @@ Route::middleware('login')->group(function () {
 
 
     // paypal
-    Route::post('/paypal/create-order', [PayPalController::class, 'createOrder'])->name('paypal.create.order');
-    Route::post('/paypal/capture-order', [PayPalController::class, 'captureOrder'])->name('paypal.capture.order');
+    Route::post('/paypal/create', [PayPalController::class, 'create'])->name('paypal.create');
+    Route::get('/paypal/success', [PayPalController::class, 'success'])->name('paypal.success');
+    Route::get('/paypal/cancel', [PayPalController::class, 'cancel'])->name('paypal.cancel');
 
     //stripe
-    Route::post('/create-payment-intent', [StripePaymentController::class, 'createPaymentIntent']);
+    Route::post('/stripe/create-intent', [StripePaymentController::class, 'createIntent'])->name('stripe.intent');
+
+    Route::post('/stripe/confirm', [StripePaymentController::class, 'confirmPayment'])->name('stripe.confirm');
 });

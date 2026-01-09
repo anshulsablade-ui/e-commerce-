@@ -110,16 +110,16 @@
                                 </select>
                             </div>
 
-                            {{-- <div class="col-md-3 mb-3 d-flex align-items-end">
-                                <button id="custom-paypal-btn" class="btn btn-success">💳 Pay Now</button>
-                            </div> --}}
+                            <div class="col-md-3 mb-3 d-flex align-items-end">
+                                {{-- <button id="custom-paypal-btn" class="btn btn-success">💳 Pay Now</button> --}}
+                                {{-- <button type="button" class="btn btn-primary w-100" id="payBtn">
+                                    Pay with PayPal
+                                    <span class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;"></span>
+                                </button> --}}
+                            </div>
                         </div>
 
-                        <div class="row justify-content-between">
-                            <div class="col-md-6">
-                                <div id="paypal-button-container" class="col-md-3 mb-3 d-flex align-items-end text-end">
-                                </div>
-                            </div>
+                        <div class="row justify-content-end">
                             <div class="col-md-6">
                                 <div class="text-end">
                                     <h6>Subtotal: ₹ <span id="subtotal">0.00</span></h6>
@@ -144,7 +144,6 @@
 
 @section('script')
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://www.paypal.com/sdk/js?client-id={{ config('paypal.sandbox.client_id') }}&currency=USD"></script>
 
     <script>
         $(document).ready(function() {
@@ -372,7 +371,7 @@
 
                 ajaxCall("{{ route('order.store') }}", "POST", formData, function(response) {
                         if (response.status === 'success') {
-                            window.location.href = "{{ route('order.index') }}";
+                            window.location.href = response.redirect;
                         }
                     },
                     function(xhr) {
@@ -411,51 +410,6 @@
 
             });
         });
-    </script>
-
-    <script>
-        paypal.Buttons({
-            createOrder: function() {
-    let amount = $('#grandTotal').text().trim(); // ✅ FIX
-
-    // Convert to PayPal format
-    amount = parseFloat(amount).toFixed(2);
-
-    console.log('PayPal Amount:', amount);
-
-                return $.ajax({
-                    url: '/paypal/create-order',
-                    method: 'POST',
-                    data: { amount: amount }
-                }).then(function(response) {
-                    console.log('Order Response:', response.id);
-                    return response.id;
-                });
-            },
-
-            onApprove: function(data) {
-                return $.ajax({
-                    url: '/paypal/capture-order',
-                    method: 'POST',
-                    data: { orderID: data.orderID }
-                }).then(function(res) {
-                    alert('Payment Successful!');
-                    console.log(res);
-                });
-            },
-
-            onCancel: function() {
-                alert('Payment cancelled');
-            },
-
-            onError: function(err) {
-                console.log(err);
-                if (err.status == 400) {
-                    alert(err.message);
-                }
-                alert('Payment failed');
-            }
-        }).render('#paypal-button-container');
     </script>
 
 @endsection

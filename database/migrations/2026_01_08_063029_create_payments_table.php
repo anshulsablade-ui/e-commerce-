@@ -12,9 +12,19 @@ return new class extends Migration {
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->string('paypal_order_id');
-            $table->string('status');
+
+            $table->foreignId('order_id')->constrained();
+            $table->enum('gateway', ['paypal', 'stripe']);
+            $table->string('transaction_id', 150);
+            // PayPal: capture_id / order_id
+            // Stripe: payment_intent_id / charge_id
+
             $table->decimal('amount', 10, 2);
+            $table->char('currency', 3)->default('USD');
+
+            $table->enum('status', ['created', 'pending', 'success', 'failed', 'refunded'])->default('created');
+            $table->json('response')->nullable();
+
             $table->timestamps();
         });
     }

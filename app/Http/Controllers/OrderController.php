@@ -97,6 +97,7 @@ class OrderController extends Controller
                 'discount_amount' => $discountAmount,
                 'grand_total' => $grandTotal,
                 'status' => $request->order_status,
+                'payment_status' => 'pending',
             ]);
 
             foreach ($request->product as $index => $productId) {
@@ -120,7 +121,8 @@ class OrderController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Order created successfully',
-                'order_id' => $order->order_number
+                'order_id' => $order->order_number,
+                'redirect' => route('order.show', $order->id)
             ]);
 
         } catch (\Exception $e) {
@@ -171,6 +173,7 @@ class OrderController extends Controller
                 'discount_amount' => $discountAmount,
                 'grand_total' => $grandTotal,
                 'status' => $request->order_status,
+                'payment_status' => 'pending',
             ]);
 
             $orderItems = $order->orderItem()->get();
