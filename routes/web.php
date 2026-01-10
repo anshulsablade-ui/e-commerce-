@@ -84,8 +84,8 @@ Route::middleware('login')->group(function () {
     Route::get('/paypal/success', [PayPalController::class, 'success'])->name('paypal.success');
     Route::get('/paypal/cancel', [PayPalController::class, 'cancel'])->name('paypal.cancel');
 
-    //stripe
+    // stripe
     Route::post('/stripe/create-intent', [StripePaymentController::class, 'createIntent'])->name('stripe.intent');
+    Route::post('/stripe/confirm', [StripePaymentController::class, 'confirm'])->name('stripe.confirm');
 
-    Route::post('/stripe/confirm', [StripePaymentController::class, 'confirmPayment'])->name('stripe.confirm');
 });

@@ -3,6 +3,7 @@
 @section('title', 'Order #' . $order->order_number)
 
 @section('style')
+
 @endsection
 
 @section('content')
@@ -68,7 +69,7 @@
 
                                     <td class="text-center price">₹{{ $item->price }}</td>
                                     <td class="text-center">{{ $item->quantity }}</td>
-                                    <td class="text-end price">₹{{ $item->price * $item->quantity }}</td>
+                                    <td class="text-end price">₹{{ $item->total }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -83,11 +84,54 @@
                                     <span class="spinner-border spinner-border-sm ms-2" role="status"
                                         style="display: none;"></span>
                                 </button>
-                                <button type="button" class="btn btn-primary w-100 mb-2" id="stripePayBtn">
+                                <button type="button" class="btn btn-primary w-100 mb-2" id="stripePayBtn"
+                                    data-bs-toggle="modal" data-bs-target="#modalCenter">
                                     Pay with Stripe
                                     <span class="spinner-border spinner-border-sm ms-2" role="status"
                                         style="display: none;"></span>
                                 </button>
+
+                                <!-- Modal -->
+                                <div class="modal fade" id="stripeModal" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered" role="document">
+                                        <div class="modal-content">
+
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Stripe Payment</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+
+                                            <div class="modal-body">
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Card Details</label>
+                                                    <div id="card-element" class="form-control p-2"></div>
+                                                    <small id="card-errors" class="text-danger"></small>
+                                                </div>
+
+                                                <div class="d-flex justify-content-between border-top pt-3">
+                                                    <strong>Total</strong>
+                                                    <strong>₹{{ $order->grand_total }}</strong>
+                                                </div>
+
+                                            </div>
+
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-outline-secondary"
+                                                    data-bs-dismiss="modal">
+                                                    Cancel
+                                                </button>
+
+                                                <button type="button" class="btn btn-primary" id="confirmStripePayment">
+                                                    Pay Now
+                                                    <span class="spinner-border spinner-border-sm ms-2"
+                                                        style="display:none"></span>
+                                                </button>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
                             @endif
                         </div>
                         <div class="col-auto d-flex justify-content-end">
@@ -249,8 +293,34 @@
             });
 
 
-            $('#stripePayBtn').on('click', function(e) {
-                e.preventDefault();
+            // stripe payment
+            const stripe = Stripe("{{ config('services.stripe.key') }}");
+            const elements = stripe.elements();
+
+            let stripeModal;
+            let card;
+
+            $('#stripePayBtn').on('click', function() {
+
+                const modalEl = document.getElementById('stripeModal');
+
+                stripeModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                stripeModal.show();
+
+                if (!card) {
+                    card = elements.create('card', {
+                        hidePostalCode: true
+                    });
+                    card.mount('#card-element');
+
+                    card.on('change', function(event) {
+                        $('#card-errors').text(event.error ? event.error.message : '');
+                    });
+                }
+            });
+
+
+            $('#confirmStripePayment').on('click', function() {
 
                 const order_id = '{{ $order->id }}';
                 const $btn = $(this);
@@ -275,30 +345,31 @@
                                 $('#card-errors').text(result.error.message);
                                 $btn.prop('disabled', false);
                                 $spinner.hide();
-                            } else {
+                            } else if (result.paymentIntent.status === 'succeeded') {
 
-                                if (result.paymentIntent.status === 'succeeded') {
+                                $.post("{{ route('stripe.confirm') }}", {
+                                    order_id: order_id,
+                                    payment_intent_id: result.paymentIntent.id,
+                                    amount: result.paymentIntent.amount / 100,
+                                    _token: "{{ csrf_token() }}"
+                                });
 
-                                    $.post("{{ route('stripe.confirm') }}", {
-                                        order_id: order_id,
-                                        payment_intent_id: result.paymentIntent.id,
-                                        amount: result.paymentIntent.amount / 100,
-                                        _token: "{{ csrf_token() }}"
-                                    });
+                                // close modal
+                                stripeModal.hide();
+                                $btn.prop('disabled', false);
+                                $spinner.hide();
 
-                                    alert('Payment successful!');
-                                    window.location.reload();
-                                }
+                                Swal.fire('Success', 'Payment completed successfully!', 'success')
+                                    .then(() => location.reload());
                             }
                         });
                     })
-                    .fail(function(xhr) {
-                        alert(xhr.responseJSON?.message || 'Payment failed');
+                    .fail(() => {
+                        alert('Payment failed');
                         $btn.prop('disabled', false);
                         $spinner.hide();
                     });
             });
-
 
         });
     </script>

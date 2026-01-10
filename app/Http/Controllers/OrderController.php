@@ -157,7 +157,6 @@ class OrderController extends Controller
         DB::beginTransaction();
 
         try {
-
             $order = Order::findOrFail($id);
             $subtotal = array_sum($request->total);
 

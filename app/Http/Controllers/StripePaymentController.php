@@ -10,44 +10,67 @@ use Stripe\PaymentIntent;
 
 class StripePaymentController extends Controller
 {
+    public function createIntent(Request $request)
+    {
+        Stripe::setApiKey(config('services.stripe.secret'));
 
-public function createIntent(Request $request)
-{
-    Stripe::setApiKey(config('services.stripe.secret'));
+        $order = Order::findOrFail($request->order_id);
 
-    $order = Order::findOrFail($request->order_id);
+        // Prevent duplicate payment
+        if ($order->payment_status === 'paid') {
+            return response()->json([ 'success' => false, 'message' => 'Order already paid' ], 400);
+        }
 
-    $intent = PaymentIntent::create([
-        'amount' => (int) ($order->grand_total * 100),
-        'currency' => 'inr',
-        'description' => "Order #{$order->order_number}",
-        'metadata' => [
-            'order_id' => $order->id
-        ],
-    ]);
-// dd($intent->toArray());
-    return response()->json([
-        'success' => true,
-        'client_secret' => $intent->client_secret
-    ]);
-}
+        $intent = PaymentIntent::create([
+            'amount' => (int) round($order->grand_total * 100), // INR → paise
+            'currency' => 'inr',
+            'description' => "Order #{$order->order_number}",
+            'metadata' => [
+                'order_id' => $order->id,
+            ],
+            'automatic_payment_methods' => [
+                'enabled' => true,
+            ],
+        ]);
 
+        // Save as pending
+        Payment::create([
+            'order_id' => $order->id,
+            'gateway' => 'stripe',
+            'transaction_id' => $intent->id,
+            'amount' => $order->grand_total,
+            'currency' => 'INR',
+            'status' => 'pending',
+            'response' => json_encode($intent),
+        ]);
 
-public function confirmPayment(Request $request)
-{
-    $payment = Payment::create([
-        'order_id' => $request->order_id,
-        'gateway' => 'stripe',
-        'payment_intent_id' => $request->payment_intent_id,
-        'amount' => $request->amount,
-        'currency' => 'INR',
-        'status' => 'success',
-        'response' => json_encode($request->all()),
-    ]);
+        return response()->json([ 'success' => true, 'client_secret' => $intent->client_secret ]);
+    }
 
-    Order::where('id', $request->order_id)->update(['status' => 'paid']);
+    public function confirm(Request $request)
+    {
+        Stripe::setApiKey(config('services.stripe.secret'));
 
-    return response()->json(['success' => true]);
-}
+        $intent = PaymentIntent::retrieve($request->payment_intent_id);
+
+        if ($intent->status === 'succeeded') {
+
+            Payment::where('transaction_id', $intent->id)->update([
+                'status' => 'success',
+                'response' => json_encode($intent),
+            ]);
+
+            Order::where('id', $request->order_id)->update([
+                'payment_status' => 'paid'
+            ]);
+
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Payment not completed'
+        ], 400);
+    }
 
 }
