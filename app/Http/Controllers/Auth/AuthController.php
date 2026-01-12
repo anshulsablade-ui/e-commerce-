@@ -43,9 +43,9 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         Auth::logout();
-
         $request->session()->invalidate();
-        return response()->json(['status' => 'success', 'message' => 'Logout successful'], 200);
+        session()->flash('success', 'Logout successful');
+        return redirect()->route('login');
     }
 
     public function showRegisterForm()
@@ -75,6 +75,7 @@ class AuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        session()->flash('success', 'Registration successful');
         return response()->json(['status' => 'success', 'message' => 'Registration successful'], 200);
     }
 }

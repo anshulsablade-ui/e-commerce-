@@ -51,11 +51,23 @@
                         <!-- Logo -->
                         <div class="app-brand justify-content-center">
                             <a href="javascript:void(0);" class="app-brand-link gap-2">
-                                <span class="app-brand-text demo text-body fw-bolder">{{ env('APP_NAME') }}</span>
+                                <span class="app-brand-text demo text-body fw-bolder">MyCart</span>
                             </a>
                         </div>
+                        <div class="w-100">
+                            <a href="{{ url('/auth/google') }}" class="btn btn-danger mb-2 w-100">
+                                <i class="tf-icons bx bxl-google"></i>
+                                Login with Google
+                            </a>
+
+                            <a href="{{ url('/auth/facebook') }}" class="btn btn-primary mb-2 w-100">
+                                <i class="tf-icons bx bxl-facebook"></i>
+                                Login with Facebook
+                            </a>
+                        </div>
+                        <div class="text-center fw-semibold border-bottom my-3"></div>
                         <!-- /Logo -->
-                        <h4 class="mb-2">Welcome to {{ env('APP_NAME') }}!</h4>
+                        <h4 class="mb-2">Welcome to MyCart!</h4>
 
                         <form id="loginForm" class="mb-3">
 
@@ -129,6 +141,24 @@
                 }
             });
 
+            @if (session('success'))
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: "top",
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.onmouseenter = Swal.stopTimer;
+                        toast.onmouseleave = Swal.resumeTimer;
+                    }
+                });
+                Toast.fire({
+                    icon: "success",
+                    title: "{{ session('success') }}"
+                });
+            @endif
+
             $('#loginForm').submit(function(e) {
                 e.preventDefault();
 
@@ -144,11 +174,13 @@
                     $('.invalid-feedback').remove();
                     var response = JSON.parse(response.responseText);
                     if (response.message.email) {
-                        var data = `<div class="invalid-feedback">${response.message.email[0]}</div>`;
+                        var data =
+                            `<div class="invalid-feedback">${response.message.email[0]}</div>`;
                         $('#email').addClass('is-invalid').after(data);
                     }
                     if (response.message.password) {
-                        var data = `<div class="invalid-feedback">${response.message.password[0]}</div>`;
+                        var data =
+                            `<div class="invalid-feedback">${response.message.password[0]}</div>`;
                         $('#password').addClass('is-invalid');
                         $('.form-password-toggle > div').addClass('is-invalid').append(data);
                     }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
@@ -17,10 +18,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('showLoginForm');
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
-
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('showRegisterForm');
 Route::post('/register', [AuthController::class, 'register'])->name('register');
 
+// Social Login
+Route::get('/auth/{provider}', [SocialAuthController::class, 'redirect']);
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback']);
 
 Route::middleware('login')->group(function () {
     Route::get('/logout', [AuthController::class, 'logout'])->name('logout');

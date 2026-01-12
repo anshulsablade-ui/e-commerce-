@@ -51,11 +51,23 @@
                         <!-- Logo -->
                         <div class="app-brand justify-content-center">
                             <a href="javascript:void(0);" class="app-brand-link gap-2">
-                                <span class="app-brand-text demo text-body fw-bolder">{{ env('APP_NAME') }}</span>
+                                <span class="app-brand-text demo text-body fw-bolder">MyCart</span>
                             </a>
                         </div>
+                        <div class="w-100">
+                            <a href="{{ url('/auth/google') }}" class="btn btn-danger mb-2 w-100">
+                                <i class="tf-icons bx bxl-google"></i>
+                                Login with Google
+                            </a>
+
+                            <a href="{{ url('/auth/facebook') }}" class="btn btn-primary mb-2 w-100">
+                                <i class="tf-icons bx bxl-facebook"></i>
+                                Login with Facebook
+                            </a>
+                        </div>
+                        <div class="text-center fw-semibold border-bottom my-3"></div>
                         <!-- /Logo -->
-                        <h4 class="mb-2">Welcome to {{ env('APP_NAME') }}!</h4>
+                        <h4 class="mb-2">Welcome to MyCart!</h4>
 
                         <form id="registerForm" class="mb-3">
                             <div class="mb-3">
