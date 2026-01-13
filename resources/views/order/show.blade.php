@@ -77,18 +77,20 @@
 
                     <!-- Totals -->
                     <div class="row d-flex justify-content-between border-top pt-3">
-                        <div class="col-auto">
+                        <div class="col-md-5">
                             @if ($order->payment_status == 'pending')
                                 <button type="button" class="btn btn-primary w-100 mb-2" id="paypalPayBtn">
                                     Pay with PayPal
-                                    <span class="spinner-border spinner-border-sm ms-2" role="status"
-                                        style="display: none;"></span>
+                                    <span class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;"></span>
                                 </button>
                                 <button type="button" class="btn btn-primary w-100 mb-2" id="stripePayBtn"
                                     data-bs-toggle="modal" data-bs-target="#modalCenter">
                                     Pay with Stripe
-                                    <span class="spinner-border spinner-border-sm ms-2" role="status"
-                                        style="display: none;"></span>
+                                    <span class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;"></span>
+                                </button>
+                                <button type="button" class="btn btn-primary w-100 mb-2" id="razorPayBtn">
+                                    Pay with Razorpay
+                                    <span class="spinner-border spinner-border-sm ms-2" role="status" style="display: none;"></span>
                                 </button>
 
                                 <!-- Modal -->
@@ -134,7 +136,7 @@
                                 </div>
                             @endif
                         </div>
-                        <div class="col-auto d-flex justify-content-end">
+                        <div class="col-md-7 d-flex justify-content-end">
 
                             <div style="width:260px">
                                 <div class="d-flex justify-content-between total-box mb-2">
@@ -204,6 +206,7 @@
 @endsection
 
 @section('script')
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>'
     <script src="https://js.stripe.com/v3/"></script>
 
     <script>
@@ -369,6 +372,53 @@
                         $btn.prop('disabled', false);
                         $spinner.hide();
                     });
+            });
+
+            // razorpay payment
+            $('#razorPayBtn').on('click', function() {
+                $.ajax({
+                    type: "POST",
+                    url: "{{ route('razorpay.order') }}",
+                    data: {
+                        amount: '{{ $order->grand_total }}',
+                        description: 'Payment for order #{{ $order->order_number }}',
+                        order_id: '{{ $order->id }}'
+                    },
+                    success: function(response) {
+
+                        if (response.order_id) {
+                            var options = {
+                                key: response.key,
+                                amount: response.amount,
+                                currency: response.currency,
+                                name: "Acme Corp",
+                                description: "Payment for order #{{ $order->order_number }}",
+                                image: "https://cdn.razorpay.com/logos/GhRQcyean79PqE_medium.png",
+                                order_id: response.order_id,
+                                theme: {
+                                    "color": "#3399cc"
+                                },
+                                handler: function(response) {
+                                    $.ajax({
+                                        type: "POST",
+                                        url: "{{ route('razorpay.verify') }}",
+                                        data: {
+                                            razorpay_payment_id: response.razorpay_payment_id,
+                                            razorpay_order_id: response.razorpay_order_id,
+                                            razorpay_signature: response.razorpay_signature,
+                                            order_id: '{{ $order->id }}'
+                                        },
+                                        success: function(response) {
+                                            window.location.href = "{{ route('order.show', $order->id) }}";
+                                        }
+                                    });
+                                }
+                            };
+                            var rzp = new Razorpay(options);
+                            rzp.open();
+                        }
+                    }
+                });
             });
 
         });

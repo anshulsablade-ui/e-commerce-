@@ -15,7 +15,7 @@ class DashboardController extends Controller
     {
         return view('dashboard', [
             'totalOrders' => Order::count(),
-            'totalSales' => Order::sum('grand_total'),
+            'totalSales' => Order::where('status', 'completed')->sum('grand_total'),
             'customers' => Customer::count(),
             'products' => Product::count(),
         ]);
@@ -39,12 +39,11 @@ class DashboardController extends Controller
             ->groupBy('month')
             ->pluck('total', 'month');
 
-            // dd($revenue);
         $monthlyRevenue = [];
         for ($i = 1; $i <= 12; $i++) {
             $monthlyRevenue[] = (float) ($revenue[$i] ?? 0);
         }
-        // dd($monthlyRevenue);
+        
         return response()->json($monthlyRevenue);
     }
 }

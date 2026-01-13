@@ -8,12 +8,13 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PayPalController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\RazorpayController;
 use App\Http\Controllers\StripePaymentController;
 use Illuminate\Support\Facades\Route;
 
-// Route::get('/', function () {
-//     return view('layouts.app');
-// });
+Route::get('/', function () {
+    return view('auth.login');
+});
 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('showLoginForm');
 Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -90,5 +91,9 @@ Route::middleware('login')->group(function () {
     // stripe
     Route::post('/stripe/create-intent', [StripePaymentController::class, 'createIntent'])->name('stripe.intent');
     Route::post('/stripe/confirm', [StripePaymentController::class, 'confirm'])->name('stripe.confirm');
+
+    // razorpay
+    Route::post('/razorpay/order', [RazorpayController::class, 'createOrder'])->name('razorpay.order');
+    Route::post('/razorpay/verify', [RazorpayController::class, 'verifyPayment'])->name('razorpay.verify');
 
 });

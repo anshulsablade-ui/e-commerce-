@@ -16,47 +16,42 @@ class SocialAuthController extends Controller
         if (!in_array($provider, ['google', 'facebook'])) {
             abort(404);
         }
-
-        // Facebook needs explicit email scope
-        if ($provider === 'facebook') {
-            return Socialite::driver('facebook')
-                ->stateless()
-                ->scopes(['email'])
-                ->redirect();
-        }
-
-        // Google works without explicit scopes
-        return Socialite::driver('google')
-            ->stateless()
-            ->redirect();
+        return Socialite::driver($provider)->redirect();
     }
 
-    public function callback(Request $request, $provider)
-    {
-        if (!in_array($provider, ['google', 'facebook'])) {
-            abort(404);
-        }
+public function callback(Request $request, $provider)
+{
+    $socialUser = Socialite::driver($provider)->user();
 
-        $socialUser = Socialite::driver($provider)
-            ->stateless()
-            ->user();
+    $user = User::where('provider', $provider)->where('provider_id', $socialUser->getId())->first();
 
-        $user = User::where('provider', $provider)
-            ->where('provider_id', $socialUser->getId())
-            ->first();
-
-        if (!$user) {
-            $user = User::create([
-                'name' => $socialUser->getName() ?? 'User',
-                'email' => $socialUser->getEmail(), // may be null
-                'provider' => $provider,
-                'provider_id' => $socialUser->getId(),
-                'password' => Hash::make(\Str::random(16)),
-            ]);
-        }
-
+    if ($user) {
         Auth::login($user, true);
-
+        session()->flash('success', 'Login successful!');
         return redirect()->route('dashboard');
     }
+
+    $user = User::where('email', $socialUser->getEmail())->first();
+
+    if ($user) {
+        $user->update([
+            'name' => $socialUser->getName() ?? $user->name,
+            'provider' => $provider,
+            'provider_id' => $socialUser->getId(),
+        ]);
+    } else {
+        $user = User::create([
+            'name' => $socialUser->getName() ?? 'User',
+            'email' => $socialUser->getEmail(),
+            'provider' => $provider,
+            'provider_id' => $socialUser->getId(),
+            'password' => Hash::make(\Str::random(16)),
+        ]);
+    }
+
+    Auth::login($user, true);
+    session()->flash('success', 'Login successful!');
+    return redirect()->route('dashboard');
+}
+
 }
